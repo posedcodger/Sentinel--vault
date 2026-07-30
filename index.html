@@ -471,7 +471,7 @@
 const GH_USER = "posedcodger";
 const GH_REPO = "Sentinel--vault";
 
-const isConfigured = GH_USER !== "posedcodger" && GH_REPO !== "Sentinel--vault";
+const isConfigured = !GH_USER.startsWith('posedcodger') && !GH_REPO.startsWith('Sentinel--vault');
 const releasesUrl = `https://github.com/${GH_USER}/${GH_REPO}/releases`;
 document.getElementById('releasesLink').href = releasesUrl + '/latest';
 document.getElementById('profileLink').href = `https://github.com/${GH_USER}`;
