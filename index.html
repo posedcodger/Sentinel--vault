@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL Vault — I tuoi segreti restano tuoi</title>
+<meta name="description" content="SENTINEL Vault: password manager locale, cifrato con AES-256-GCM e Argon2id. Nessun cloud, nessun account, nessun server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#05070a;
+    --panel:#0c1119;
+    --panel-2:#101722;
+    --line:#1d2733;
+    --line-bright:#2c3b48;
+    --phosphor:#4ade9c;
+    --phosphor-dim:#1f6b4c;
+    --amber:#e8a03c;
+    --paper:#eef2ef;
+    --text-dim:#8695a0;
+    --text-faint:#4b5964;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void); color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    overflow-x:hidden;
+  }
+  ::selection{ background:var(--phosphor-dim); color:#fff; }
+  a{ color:inherit; }
+  img,svg{ display:block; max-width:100%; }
+  button{ font-family:inherit; cursor:pointer; }
+  :focus-visible{ outline:2px solid var(--phosphor); outline-offset:3px; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 6vw; }
+  @media (min-width:1400px){ .wrap{ padding:0 4vw; } }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.24em;
+    text-transform:uppercase; color:var(--phosphor);
+  }
+  .serif{ font-family:'Newsreader', serif; }
+  .serif i{ font-style:italic; color:var(--phosphor); font-weight:500; }
+
+  #bg{
+    position:fixed; inset:0; z-index:-1;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(74,222,156,.06), transparent 70%),
+      linear-gradient(180deg, #060a0f 0%, #05070a 100%);
+  }
+  #bg::after{
+    content:''; position:absolute; inset:0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:64px 64px; opacity:.14;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent 75%);
+  }
+
+  header.nav{
+    position:sticky; top:0; z-index:40;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:20px 6vw; backdrop-filter:blur(10px);
+    background:rgba(5,7,10,.72); border-bottom:1px solid var(--line);
+  }
+  .brand{ font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:15px; letter-spacing:.14em; }
+  .brand span{ color:var(--phosphor); }
+  .nav-links{ display:flex; gap:32px; align-items:center; }
+  .nav-links a{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-dim); text-decoration:none;
+  }
+  .nav-links a:hover{ color:var(--paper); }
+  .nav-cta{
+    border:1px solid var(--phosphor-dim); color:var(--phosphor) !important; padding:8px 16px;
+  }
+  .nav-cta:hover{ background:rgba(74,222,156,.08); border-color:var(--phosphor); }
+  @media (max-width:720px){ .nav-links a:not(.nav-cta){ display:none; } }
+
+  .hero{ padding:120px 0 90px; text-align:center; }
+  .hero .eyebrow{ display:block; margin-bottom:22px; }
+  h1.headline{
+    font-family:'Newsreader', serif; font-weight:500; font-size:clamp(38px, 7vw, 84px);
+    line-height:1.04; letter-spacing:-.01em; max-width:920px; margin:0 auto;
+    color:var(--paper);
+  }
+  h1.headline .accent{ font-style:italic; color:var(--phosphor); }
+  h1.headline .scramble{ display:inline-block; }
+  p.subhead{
+    margin:28px auto 0; max-width:560px; color:var(--text-dim); font-size:17px; line-height:1.7;
+  }
+  .hero-actions{ margin-top:44px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .btn-primary{
+    background:var(--phosphor); color:#04120b; border:none; padding:15px 30px;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 10px 30px rgba(74,222,156,.22); }
+  .btn-ghost{
+    background:none; border:1px solid var(--line-bright); color:var(--paper); padding:15px 26px;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+    text-decoration:none; transition:border-color .15s ease;
+  }
+  .btn-ghost:hover{ border-color:var(--phosphor-dim); }
+
+  .stamps{
+    margin-top:80px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    display:grid; grid-template-columns:repeat(4,1fr);
+  }
+  .stamp{
+    padding:20px 14px; text-align:center; border-left:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.12em; color:var(--text-dim);
+  }
+  .stamp:first-child{ border-left:none; }
+  .stamp b{ display:block; color:var(--phosphor); font-size:13px; letter-spacing:.06em; margin-bottom:4px; }
+  @media (max-width:720px){ .stamps{ grid-template-columns:repeat(2,1fr); } .stamp{ border-left:1px solid var(--line); } .stamp:nth-child(odd){ border-left:none; } .stamp:nth-child(1),.stamp:nth-child(2){ border-bottom:1px solid var(--line); } }
+
+  section{ padding:110px 0; }
+  .section-head{ max-width:640px; margin-bottom:64px; }
+  .section-head .eyebrow{ margin-bottom:16px; }
+  h2{ font-family:'Newsreader', serif; font-weight:500; font-size:clamp(28px,3.6vw,42px); line-height:1.15; color:var(--paper); }
+  h2 i{ font-style:italic; color:var(--phosphor); }
+  .section-head p{ margin-top:16px; color:var(--text-dim); font-size:15.5px; line-height:1.75; }
+
+  .dossier-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .dossier-card{ background:var(--panel); padding:38px 32px; position:relative; }
+  .dossier-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.14em; color:var(--phosphor);
+    border:1px solid var(--phosphor-dim); display:inline-block; padding:4px 10px; margin-bottom:22px;
+  }
+  .dossier-card h3{ font-family:'Newsreader', serif; font-weight:500; font-size:22px; color:var(--paper); margin-bottom:12px; }
+  .dossier-card p{ color:var(--text-dim); font-size:14.5px; line-height:1.7; }
+  @media (max-width:900px){ .dossier-grid{ grid-template-columns:1fr; } }
+
+  .flow{ display:flex; flex-direction:column; gap:0; max-width:640px; }
+  .flow-step{ display:grid; grid-template-columns:52px 1fr; gap:22px; padding:26px 0; position:relative; }
+  .flow-step:not(:last-child)::after{
+    content:''; position:absolute; left:25px; top:64px; bottom:-10px; width:1px; background:var(--line-bright);
+  }
+  .flow-dot{
+    width:52px; height:52px; border:1px solid var(--phosphor-dim); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; background:var(--panel);
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--phosphor); flex-shrink:0; z-index:1;
+  }
+  .flow-body h4{ font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:16.5px; color:var(--paper); margin-bottom:6px; }
+  .flow-body p{ color:var(--text-dim); font-size:14px; line-height:1.7; }
+  .flow-body code{ font-family:'IBM Plex Mono',monospace; color:var(--phosphor); font-size:12.5px; background:rgba(74,222,156,.08); padding:1px 6px; }
+
+  #download{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .dl-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .dl-card{
+    background:var(--void); padding:30px 26px; display:flex; flex-direction:column; gap:18px;
+  }
+  .dl-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .dl-icon{ width:34px; height:34px; color:var(--phosphor); }
+  .dl-platform{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.12em; color:var(--text-faint); text-transform:uppercase; text-align:right; }
+  .dl-card h3{ font-family:'Newsreader', serif; font-weight:500; font-size:21px; color:var(--paper); }
+  .dl-meta{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim); min-height:16px; }
+  .dl-btn{
+    margin-top:auto; text-align:center; text-decoration:none;
+    background:none; border:1px solid var(--phosphor-dim); color:var(--phosphor);
+    padding:12px; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    transition:all .15s ease;
+  }
+  .dl-btn:hover{ background:rgba(74,222,156,.08); border-color:var(--phosphor); }
+  .dl-btn.disabled{ opacity:.4; pointer-events:none; border-color:var(--line-bright); color:var(--text-dim); }
+  .dl-fallback{ text-align:center; margin-top:34px; }
+  .dl-fallback a{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-dim); text-decoration:underline; text-underline-offset:3px; }
+  .dl-fallback a:hover{ color:var(--phosphor); }
+  .config-banner{
+    display:none; max-width:640px; margin:0 auto 40px; padding:14px 18px; border:1px solid var(--amber);
+    color:var(--amber); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.6; text-align:left;
+  }
+  .config-banner.show{ display:block; }
+  .config-banner code{ background:rgba(232,160,60,.12); padding:1px 5px; }
+
+  #showcase{ background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); overflow:hidden; }
+  .slider-track{
+    display:flex; gap:24px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 6vw 28px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .slider-track::-webkit-scrollbar{ display:none; }
+  .slide{
+    flex:0 0 auto; width:min(560px, 82vw); scroll-snap-align:center;
+  }
+  .frame{
+    background:#03050a; border:1px solid var(--line-bright); border-radius:10px; overflow:hidden;
+    box-shadow:0 30px 70px rgba(0,0,0,.5);
+  }
+  .frame-bar{
+    display:flex; align-items:center; gap:6px; padding:10px 14px; background:#0a0e14; border-bottom:1px solid var(--line);
+  }
+  .frame-dot{ width:9px; height:9px; border-radius:50%; background:#2a3540; }
+  .frame-title{
+    margin-left:10px; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; color:var(--text-faint);
+  }
+  .frame-body{ aspect-ratio:16/10; position:relative; background:#05070a; font-family:'IBM Plex Mono',monospace; }
+  .slide-caption{ margin-top:16px; text-align:center; color:var(--text-dim); font-size:13px; }
+  .slide-caption b{ color:var(--paper); font-weight:600; }
+
+  .slider-dots{ display:flex; justify-content:center; gap:8px; padding-bottom:50px; }
+  .slider-dots button{
+    width:7px; height:7px; border-radius:50%; border:none; background:var(--line-bright); padding:0;
+  }
+  .slider-dots button.active{ background:var(--phosphor); }
+
+  .mock-pin{ display:flex; align-items:center; justify-content:center; height:100%; }
+  .mock-pin-box{ text-align:center; }
+  .mock-pin-title{ font-family:'IBM Plex Sans',sans-serif; font-weight:700; font-size:15px; color:#eef3f5; letter-spacing:.06em; margin-bottom:4px; }
+  .mock-pin-title span{ color:var(--phosphor); }
+  .mock-pin-sub{ font-size:9px; letter-spacing:.18em; color:var(--text-faint); text-transform:uppercase; margin-bottom:18px; }
+  .mock-dots{ display:flex; gap:8px; justify-content:center; margin-bottom:18px; }
+  .mock-dots i{ width:8px; height:8px; border:1px solid #2c3b4a; display:block; }
+  .mock-dots i.on{ background:var(--phosphor); border-color:var(--phosphor); box-shadow:0 0 6px rgba(74,222,156,.7); }
+  .mock-keys{ display:grid; grid-template-columns:repeat(3,28px); gap:6px; justify-content:center; }
+  .mock-keys div{ border:1px solid #1e2833; color:#8695a0; font-size:10px; display:flex; align-items:center; justify-content:center; height:24px; }
+
+  .mock-dash{ padding:20px; }
+  .mock-dash-head{ display:flex; justify-content:space-between; font-size:8px; letter-spacing:.1em; color:var(--text-faint); text-transform:uppercase; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid #1d2733; }
+  .mock-dash-title{ font-family:'IBM Plex Sans',sans-serif; font-weight:700; font-size:13px; color:#eef3f5; margin-bottom:14px; }
+  .mock-cards{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#1d2733; border:1px solid #1d2733; }
+  .mock-card{ background:#0c1119; padding:14px; }
+  .mock-card .k{ font-size:8px; letter-spacing:.08em; color:var(--phosphor); border:1px solid #1f6b4c; display:inline-block; padding:2px 6px; margin-bottom:10px; }
+  .mock-card .t{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:11.5px; color:#eef3f5; margin-bottom:4px; }
+  .mock-card .d{ font-size:8.5px; color:var(--text-dim); }
+
+  .mock-cred{ padding:20px; }
+  .mock-row{ display:flex; justify-content:space-between; align-items:center; padding:11px 12px; border:1px solid #1d2733; margin-bottom:1px; background:#0c1119; }
+  .mock-row .site{ font-family:'IBM Plex Sans',sans-serif; font-weight:600; font-size:11px; color:#eef3f5; }
+  .mock-row .user{ font-size:8.5px; color:var(--text-dim); margin-top:2px; }
+  .mock-row .pass{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--phosphor); }
+  .mock-row .dots{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-faint); letter-spacing:2px; }
+  footer{ padding:60px 0 50px; }
+  .footer-row{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
+    padding-top:34px; border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.08em; color:var(--text-faint); text-transform:uppercase;
+  }
+  footer .footer-row a{ text-decoration:none; color:var(--text-dim); }
+  footer .footer-row a:hover{ color:var(--phosphor); }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+
+<header class="nav">
+  <div class="brand">SENT<span>I</span>NEL</div>
+  <nav class="nav-links">
+    <a href="#dossier">Sicurezza</a>
+    <a href="#architettura">Architettura</a>
+    <a href="#download" class="nav-cta">Scarica</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <span class="eyebrow">Password manager locale · cifrato · senza cloud</span>
+    <h1 class="headline">
+      <span class="scramble" id="scrambleText">I tuoi segreti restano tuoi.</span>
+    </h1>
+    <p class="subhead serif">SENTINEL cifra tutto <i>sul tuo dispositivo</i>, prima ancora che tu prema salva. Nessun server, nessun account, nessuna eccezione.</p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Scarica per il tuo sistema
+      </a>
+      <a href="#architettura" class="btn-ghost">Come funziona la cifratura</a>
+    </div>
+
+    <div class="stamps">
+      <div class="stamp"><b>AES-256-GCM</b>cifratura dei dati</div>
+      <div class="stamp"><b>ARGON2ID</b>derivazione della chiave</div>
+      <div class="stamp"><b>ZERO CLOUD</b>nessun server esterno</div>
+      <div class="stamp"><b>3 PIATTAFORME</b>Windows · macOS · Android</div>
+    </div>
+  </section>
+
+  <section id="showcase">
+    <div class="wrap" style="padding-top:70px;">
+      <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto;">
+        <span class="eyebrow">Interfaccia</span>
+        <h2>La stessa cura <i>anche dentro.</i></h2>
+      </div>
+    </div>
+    <div class="slider-track" id="sliderTrack">
+      <div class="slide">
+        <div class="frame">
+          <div class="frame-bar"><i class="frame-dot"></i><i class="frame-dot"></i><i class="frame-dot"></i><span class="frame-title">SENTINEL // Terminale di accesso</span></div>
+          <div class="frame-body">
+            <div class="mock-pin">
+              <div class="mock-pin-box">
+                <div class="mock-pin-title">SENT<span>I</span>NEL</div>
+                <div class="mock-pin-sub">Verifica 1 di 2</div>
+                <div class="mock-dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+                <div class="mock-keys">
+                  <div>1</div><div>2</div><div>3</div>
+                  <div>4</div><div>5</div><div>6</div>
+                  <div>7</div><div>8</div><div>9</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="slide-caption"><b>Doppia verifica.</b> PIN a 6 cifre, poi password maestra con Argon2id.</p>
+      </div>
+
+      <div class="slide">
+        <div class="frame">
+          <div class="frame-bar"><i class="frame-dot"></i><i class="frame-dot"></i><i class="frame-dot"></i><span class="frame-title">SENTINEL // Pannello operativo</span></div>
+          <div class="frame-body">
+            <div class="mock-dash">
+              <div class="mock-dash-head"><span>Sessione attiva</span><span>Livello: Proprietario</span></div>
+              <div class="mock-dash-title">Il tuo vault, cifrato end-to-end.</div>
+              <div class="mock-cards">
+                <div class="mock-card"><span class="k">SBLOCCATO</span><div class="t">Archivio Credenziali</div><div class="d">12 voci salvate</div></div>
+                <div class="mock-card"><span class="k">BLOCCATO</span><div class="t">Archivio File</div><div class="d">4 file salvati</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="slide-caption"><b>Due archivi separati.</b> Ognuno con un proprio PIN che entra nella cifratura.</p>
+      </div>
+
+      <div class="slide">
+        <div class="frame">
+          <div class="frame-bar"><i class="frame-dot"></i><i class="frame-dot"></i><i class="frame-dot"></i><span class="frame-title">SENTINEL // Archivio Credenziali</span></div>
+          <div class="frame-body">
+            <div class="mock-cred">
+              <div class="mock-row"><div><div class="site">posta-lavoro.com</div><div class="user">m.rossi@posta-lavoro.com</div></div><div class="dots">••••••••</div></div>
+              <div class="mock-row"><div><div class="site">banca-online.it</div><div class="user">mario.rossi</div></div><div class="pass">Kj9#mQ2vXz!8</div></div>
+              <div class="mock-row"><div><div class="site">cloud-personale.net</div><div class="user">mrossi92</div></div><div class="dots">••••••••</div></div>
+            </div>
+          </div>
+        </div>
+        <p class="slide-caption"><b>Password generate e leggibili al bisogno.</b> Copia negli appunti, poi si cancella da sola.</p>
+      </div>
+    </div>
+    <div class="slider-dots" id="sliderDots"></div>
+  </section>
+
+  <section id="dossier" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Cosa protegge</span>
+      <h2>Tre archivi, <i>tre chiavi indipendenti.</i></h2>
+      <p>Ogni sezione del vault ha una propria protezione. Conoscere una chiave non basta ad aprire le altre.</p>
+    </div>
+    <div class="dossier-grid">
+      <div class="dossier-card">
+        <span class="dossier-tag">DOC // MASTER-KEY</span>
+        <h3>Una password, non la chiave</h3>
+        <p>La tua password maestra non cifra mai i dati direttamente: sblocca una chiave dati generata a caso. Puoi cambiarla quando vuoi, senza dover ricifrare nulla.</p>
+      </div>
+      <div class="dossier-card">
+        <span class="dossier-tag">DOC // SECTION-LOCK</span>
+        <h3>Un PIN per archivio</h3>
+        <p>Credenziali e file hanno ciascuno un proprio PIN a 6 cifre, che contribuisce davvero alla cifratura di quella sezione — non è un blocco solo estetico.</p>
+      </div>
+      <div class="dossier-card">
+        <span class="dossier-tag">DOC // ZERO-KNOWLEDGE</span>
+        <h3>Nessuno guarda</h3>
+        <p>Nessun server, nessun account da creare, nessuna sincronizzazione remota. I tuoi dati cifrati restano solo sul tuo dispositivo, sempre.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="architettura" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Architettura</span>
+      <h2>Dalla tua password <i>ai tuoi dati.</i></h2>
+      <p>Il percorso completo che una richiesta di accesso deve superare prima di raggiungere qualsiasi informazione salvata.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-dot">PIN</div>
+        <div class="flow-body"><h4>Codice di accesso</h4><p>Prima verifica, un PIN a 6 cifre scelto da te. Filtra gli accessi occasionali prima ancora di toccare la crittografia vera.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot" style="font-size:9px;">A2ID</div>
+        <div class="flow-body"><h4>Password maestra → Argon2id</h4><p>La password viene trasformata in una chiave tramite <code>Argon2id</code>, pensato per resistere ad attacchi con hardware dedicato — non un semplice hash.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">DEK</div>
+        <div class="flow-body"><h4>Chiave dati casuale</h4><p>Quella chiave non cifra nulla direttamente: apre una seconda chiave, generata a caso, che è la vera radice di tutto il vault.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot" style="font-size:10px;">PIN+</div>
+        <div class="flow-body"><h4>Chiave di sezione</h4><p>Ogni archivio deriva la propria chiave combinando la radice con il proprio PIN — indipendente dagli altri archivi.</p></div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot" style="font-size:9px;">AES</div>
+        <div class="flow-body"><h4>AES-256-GCM</h4><p>Solo a questo punto i tuoi dati vengono cifrati o decifrati — sempre in locale, mai su un server.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <div class="section-head" style="margin-left:auto; margin-right:auto; text-align:center;">
+        <span class="eyebrow">Scarica</span>
+        <h2>Una build per <i>ogni sistema.</i></h2>
+        <p>Generate direttamente dal codice sorgente ad ogni release. Nessun installer di terze parti.</p>
+      </div>
+
+      <div class="config-banner" id="configBanner">
+        ⚠ Il sito non è ancora collegato a un repository GitHub reale.<br>
+        Apri il file del sito e sostituisci <code>GH_USER</code> e <code>GH_REPO</code> in cima allo script con i tuoi valori (qui <code>GH_REPO</code> è la repository pubblica del sito, quella dove arrivano le Release).
+      </div>
+
+      <div class="dl-grid">
+        <div class="dl-card">
+          <div class="dl-top">
+            <svg class="dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="12" rx="1"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>
+            <span class="dl-platform">Windows 10/11</span>
+          </div>
+          <h3>Windows</h3>
+          <div class="dl-meta" data-meta="windows">verifica versione…</div>
+          <a class="dl-btn disabled" data-btn="windows" href="#">Scarica .exe</a>
+        </div>
+
+        <div class="dl-card">
+          <div class="dl-top">
+            <svg class="dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a5 5 0 0 0-5 5v2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5z"/></svg>
+            <span class="dl-platform">Apple Silicon · M1+</span>
+          </div>
+          <h3>macOS</h3>
+          <div class="dl-meta" data-meta="mac-arm">verifica versione…</div>
+          <a class="dl-btn disabled" data-btn="mac-arm" href="#">Scarica .dmg</a>
+        </div>
+
+        <div class="dl-card">
+          <div class="dl-top">
+            <svg class="dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a5 5 0 0 0-5 5v2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5z"/></svg>
+            <span class="dl-platform">Intel</span>
+          </div>
+          <h3>macOS</h3>
+          <div class="dl-meta" data-meta="mac-intel">verifica versione…</div>
+          <a class="dl-btn disabled" data-btn="mac-intel" href="#">Scarica .dmg</a>
+        </div>
+
+        <div class="dl-card">
+          <div class="dl-top">
+            <svg class="dl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <span class="dl-platform">Android 8+</span>
+          </div>
+          <h3>Android</h3>
+          <div class="dl-meta" data-meta="android">verifica versione…</div>
+          <a class="dl-btn disabled" data-btn="android" href="#">Scarica .apk</a>
+        </div>
+      </div>
+
+      <div class="dl-fallback"><a id="releasesLink" href="#" target="_blank" rel="noopener">Vedi tutte le release su GitHub →</a></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="footer-row">
+    <span>SENTINEL Vault &middot; Riccardo Dorigo &copy;</span>
+    <a id="profileLink" href="#" target="_blank" rel="noopener">github.com/<span id="profileHandle">TUO-UTENTE</span></a>
+    <span>Nessun cookie &middot; nessun tracciamento</span>
+  </div>
+</footer>
+
+<script>
+const GH_USER = "posedcodger";
+const GH_REPO = "Sentinel--vault";
+
+const isConfigured = GH_USER !== "posedcodger" && GH_REPO !== "Sentinel--vault";
+const releasesUrl = `https://github.com/${GH_USER}/${GH_REPO}/releases`;
+document.getElementById('releasesLink').href = releasesUrl + '/latest';
+document.getElementById('profileLink').href = `https://github.com/${GH_USER}`;
+document.getElementById('profileHandle').textContent = GH_USER;
+
+if(!isConfigured){
+  document.getElementById('configBanner').classList.add('show');
+}
+
+const track = document.getElementById('sliderTrack');
+const dotsWrap = document.getElementById('sliderDots');
+const slides = Array.from(track.children);
+slides.forEach((_, i)=>{
+  const b = document.createElement('button');
+  if(i===0) b.classList.add('active');
+  b.addEventListener('click', ()=> slides[i].scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'}));
+  dotsWrap.appendChild(b);
+});
+const dotEls = Array.from(dotsWrap.children);
+let scrollTimeout = null;
+track.addEventListener('scroll', ()=>{
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(()=>{
+    const trackCenter = track.scrollLeft + track.clientWidth/2;
+    let closest = 0, closestDist = Infinity;
+    slides.forEach((s,i)=>{
+      const dist = Math.abs((s.offsetLeft + s.clientWidth/2) - trackCenter);
+      if(dist < closestDist){ closestDist = dist; closest = i; }
+    });
+    dotEls.forEach((d,i)=> d.classList.toggle('active', i===closest));
+  }, 80);
+});
+
+function scrambleIn(el, finalText, duration=900){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&';
+  const frames = 22;
+  let frame = 0;
+  const iv = setInterval(()=>{
+    frame++;
+    if(frame >= frames){
+      clearInterval(iv);
+      el.textContent = finalText;
+      return;
+    }
+    let out = '';
+    for(let i=0;i<finalText.length;i++){
+      const ch = finalText[i];
+      if(ch === ' '){ out += ' '; continue; }
+      out += (i < finalText.length*frame/frames) ? ch : chars[Math.floor(Math.random()*chars.length)];
+    }
+    el.textContent = out;
+  }, duration/frames);
+}
+const scrambleEl = document.getElementById('scrambleText');
+const finalHeadline = scrambleEl.textContent.trim();
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  scrambleEl.textContent = finalHeadline;
+} else {
+  scrambleEl.textContent = '';
+  setTimeout(()=> scrambleIn(scrambleEl, finalHeadline), 200);
+}
+
+async function loadDownloads(){
+  if(!isConfigured) return;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`);
+    if(!res.ok) throw new Error('release non trovata');
+    const data = await res.json();
+    const assets = data.assets || [];
+
+    const find = (test) => assets.find(a => test(a.name.toLowerCase()));
+    const targets = {
+      windows: find(n => n.endsWith('.exe')),
+      'mac-arm': find(n => n.endsWith('.dmg') && (n.includes('aarch64') || n.includes('arm64') || n.includes('apple-silicon'))),
+      'mac-intel': find(n => n.endsWith('.dmg') && (n.includes('x86_64') || n.includes('x64') || n.includes('intel'))),
+      android: find(n => n.endsWith('.apk')),
+    };
+    const anyDmg = find(n => n.endsWith('.dmg'));
+    if(!targets['mac-arm'] && !targets['mac-intel'] && anyDmg){
+      targets['mac-arm'] = anyDmg;
+    }
+
+    Object.entries(targets).forEach(([key, asset])=>{
+      const btn = document.querySelector(`[data-btn="${key}"]`);
+      const meta = document.querySelector(`[data-meta="${key}"]`);
+      if(asset){
+        btn.href = asset.browser_download_url;
+        btn.classList.remove('disabled');
+        const mb = (asset.size / (1024*1024)).toFixed(1);
+        meta.textContent = `${data.tag_name} · ${mb} MB`;
+      } else {
+        meta.textContent = 'non disponibile in questa release';
+      }
+    });
+  } catch(e){
+    document.querySelectorAll('.dl-meta').forEach(m => m.textContent = 'impossibile verificare ora');
+  }
+}
+loadDownloads();
+</script>
+
+</body>
+</html>
